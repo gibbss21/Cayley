@@ -3,7 +3,7 @@ Sets arbitrary values of variables to be referenced by volume.py.
 """
 
 timesteps = 50
-node_list = [[0,1],[0,4]]
+node_list = [[0,1],[0,4],[1,1]]
 #    Format [[1 node in 1 pair, 2 node in 1 pair],[1 node in 2 pair, 2 node in 2 pair],...]
 initial_state = "empty"
 #    Can be either "empty", "random", or "zero"
@@ -23,12 +23,15 @@ r1_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 r2_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
 temp_d = {0: 0.3,
-          1: 0.2,
+          1: 0.3,
           2: 0.3,
-          3: 0.2,
+          3: 0.3,
           4: 0.3,
-          5: 0.2,
+          5: 0.3,
           6: 0.3
           }
 
-senate_corr = [['Franken','Sanders'],['Sanders','Merkley']]
+senate_corr = [['Franken','Sanders'],['Sanders','Sanders'],
+               ['Sanders','Cruz'],['Alexander','Corker'],
+               ['Sanders','Markey'],['Brown','Murphy'],
+               ['Scott','Wicker'],['Inhofe','Roberts']]
