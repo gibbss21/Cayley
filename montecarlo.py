@@ -541,13 +541,25 @@ class MonteCarlo(object):
             probability = self.gamma*list_cache[-1][x]*(phi**(unsumm/len(neigh_d[x]))) + \
                                     (1 - list_cache[-1][x])*\
                                     self.alpha*(beta**(summ/len(neigh_d[x])))
+            if x == 'Sanders' and list_cache[-1][x] == 1:
+                print("State: " + str(list_cache[-1][x]))
+                print("Summ: " + str(summ))
+                print("Unsumm: " + str(unsumm))
+                print("Probability: " + str(probability))
             if list_cache[-1][x] == 0 and \
                random.uniform(0, 1) <= probability:
+                if x == 'Sanders':
+                    print("Probability: " + str(probability))
+                    print("change")
                 cache[x] = 1
             elif list_cache[-1][x] == 1 and \
                  random.uniform(0, 1) <= probability:
+                if x == 'Sanders' and list_cache[-1][x] == 1:
+                    print("change")
                 cache[x] = 0
             else:
+                if x == 'Sanders' and list_cache[-1][x] == 1:
+                    print("no change")
                 cache[x] = list_cache[-1][x]
         list_cache.append(cache)
         self.__sim_data = list_cache

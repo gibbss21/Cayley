@@ -47,8 +47,11 @@ def simulate(model, const, a_const, radius, issue, trials):
     for i in range(trials):
         senate.clear()
         senate.senateDictionary(issue)
+        print("Trial: " + str(i))
 
         for t in range(timesteps):
+            print("\n")
+            print("Timestep: " + str(t))
             senate.simulateVote()
 
         state_collect[i] = senate.simData(senate.getTimesteps()-1)
