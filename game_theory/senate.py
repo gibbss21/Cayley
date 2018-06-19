@@ -74,8 +74,8 @@ class Senate(AbstractNetwork):
 
         for senator in self:
             partisan = ideals[senator]-self.center
-            self.add(senator,beta=(1/(self.constant*(abs(partisan)))+1),\
-                        phi = (1/(self.constant*abs(partisan))+1))
+            self.add(senator,beta=(1/(self.constant*(abs(partisan)+0.0001))+1),\
+                        phi = (1/(self.constant*(abs(partisan)+0.0001))+1))
             print(senator)
             print("phi/Beta")
             print(1/(self.constant*(abs(partisan)))+1)
