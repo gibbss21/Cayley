@@ -13,13 +13,14 @@ __author__ = "\n".join(['Justin Pusztay (pusztayj20@mail.wlu.edu)',
 __all__ = ['MonteCarlo']
 
 import random
-import xlsxwriter #http://xlsxwriter.readthedocs.io/tutorial01.html 
+import xlsxwriter #http://xlsxwriter.readthedocs.io/tutorial01.html
 from Cayley.cayleytree import *
 from Cayley.lattice import *
 import numpy as np
+from Cayley.parser import evaluator
 
 class MonteCarlo(object):
-    
+
     def __init__(self, network,
                  alpha = .5, beta = .8, gamma = 0.0, mu = 0.3,
                  r1 = 0.3, r2 = 0.5):
@@ -32,7 +33,7 @@ class MonteCarlo(object):
         self.mu = mu
         self.r1 = r1
         self.r2 = r2
-        
+
     def getAlpha(self):
         """Returns alpha value."""
         return self.alpha
@@ -40,7 +41,7 @@ class MonteCarlo(object):
     def getBeta(self):
         """Returns beta value."""
         return self.beta
-    
+
     def getGamma(self):
         """Returns gamma value."""
         return self.gamma
@@ -48,7 +49,7 @@ class MonteCarlo(object):
     def getMu(self):
         """Returns mu value"""
         return self.mu
-        
+
     def getR1(self):
         """Returns r1 value"""
         return self.r1
@@ -56,6 +57,10 @@ class MonteCarlo(object):
     def getR2(self):
         """Returns r2 value"""
         return self.r2
+
+    def getMedian(self):
+        """Returns senate median ideology score"""
+        return self.__network.center
 
     def getTimesteps(self): #needs to be looked at in 0 case
         """Returns the number of timesteps."""
@@ -79,7 +84,7 @@ class MonteCarlo(object):
         -----
         -> This is an intial state method, meaning that it can only be used
            when there is no data in sim_data, meaning the list has a lenght
-           of zero. 
+           of zero.
 
         Examples
         --------
@@ -111,7 +116,7 @@ class MonteCarlo(object):
         -----
         -> This is an intial state method, meaning that it can only be used
            when there is no data in sim_data, meaning the list has a lenght
-           of zero. 
+           of zero.
 
         Examples
         --------
@@ -163,6 +168,47 @@ class MonteCarlo(object):
         else:
             raise ValueError("Must clear data before setting initial state.")
 
+    def startUp(self):
+        """Sets the inital state of all nodes to full or spin up."""
+        if len(self.__sim_data) == 0:
+            self.__network.addMultipleNodes(self.__network,state=1)
+            self.__sim_data.append(self.__network.getNodeFeature('state'))
+        else:
+            raise ValueError("Must clear data before setting initial state.")
+
+    def startDown(self):
+        """Sets the inital state of all nodes to spin down."""
+        if len(self.__sim_data) == 0:
+            self.__network.addMultipleNodes(self.__network,state=-1)
+            self.__sim_data.append(self.__network.getNodeFeature('state'))
+        else:
+            raise ValueError("Must clear data before setting initial state.")
+
+    def randomSpins(self):
+        """Sets the inital state of all nodes to either spin up or spin down."""
+        if len(self.__sim_data) == 0:
+            for node in self.__network:
+                self.__network.add(node,state = random.choice([-1,1]))
+            self.__sim_data.append(self.__network.getNodeFeature('state'))
+        else:
+            raise ValueError("Must clear data before setting initial state.")
+
+    def senateDictionary(self, issue):
+        if len(self.__sim_data) == 0:
+            polarity = issue - 0.5
+            ideals = self.__network.getNodeFeature('ideology')
+            for node in self.__network:
+                eta = ideals[node] - self.getMedian()
+                probability = (eta*polarity + 0.34)/(0.68) ### CHANGE ###
+                if random.uniform(0, 1) <= probability:
+                    vote = 1
+                else:
+                    vote = 0
+                self.__network.add(node, state = vote)
+            self.__sim_data.append(self.__network.getNodeFeature('state'))
+        else:
+            raise ValueError("Must clear data before setting initial state.")
+
     def magnetization(self,nodes):
         """Adds magnetization to a certain group of nodes."""
         if len(self.__sim_data) == 0:
@@ -173,7 +219,7 @@ class MonteCarlo(object):
     def temperature(self,nodes,temp):
         """Adds a temperature to a group of nodes."""
         self.__network.addMultipleNodes(nodes,temperature=temp)
-                
+
     #Analysis Methods
     def getZeros(self,timestep):
         """Finds the number of nodes with in the empty state at any given
@@ -289,7 +335,16 @@ class MonteCarlo(object):
        """
         return sum([state_d.get(x)
                     for x in self.__network.neighborFinder(node)])
-    
+
+    def previousNeighbors(self,node):
+        return sum([self.__simData[-1].get(x)
+                    for x in self.__network.neighborFinder(node)])
+
+    def neighborUnsum(self,node,state_d):
+        """Returns sum(1-n) for nearest neighbors."""
+        return sum([(1-state_d.get(x))
+                       for x in self.__network.neighborFinder(node)])
+
     def edgeSum(self,neighbor,timestep):
         """Gets the state of a node on an edge."""
         return timestep.get(neighbor)
@@ -306,8 +361,8 @@ class MonteCarlo(object):
         except AttributeError:
             return "Inappropriate network type"
 
-    #Monte Carlo Algorithm methods 
-    def simulateNN(self):
+    #Monte Carlo Algorithm methods
+    def simulateNN(self,function = 'g*n+(1-n)*a*(b^s)'):
         """A monte carlo method that runs a timestep of a simulation
         by visiting each node.
 
@@ -331,7 +386,7 @@ class MonteCarlo(object):
         -> The process of running a monte carlo iterating through each node
            is that the probability of a node changing state is dependent on
            its nearest neighbors.
-           
+
         Examples
         --------
         >>> import Cayley as cy
@@ -353,15 +408,19 @@ class MonteCarlo(object):
         for x in self.__network:
             summ = self.neighborSum(x,list_cache[-1])
             #print("summ: ", summ)
-            probability = self.gamma*list_cache[-1][x] + \
-                                    (1 - list_cache[-1][x])*\
-                                    self.alpha*(self.beta**(summ))
+            probability = evaluator(function,a=.5,b=.8,g=0,s=summ,
+                                    n=list_cache[-1][x])
+##            print("Test: ",probability)
+##            probability = self.gamma*list_cache[-1][x] + \
+##                                    (1 - list_cache[-1][x])*\
+##                                    self.alpha*(self.beta**(summ))
+##            print("Proven: ",probability)
             if list_cache[-1][x] == 0 and \
                random.uniform(0, 1) <= probability:
                 cache[x] = 1
             elif list_cache[-1][x] == 1 and \
                  random.uniform(0, 1) <= probability:
-                cache[x] = 0 
+                cache[x] = 0
             else:
                 cache[x] = list_cache[-1][x]
         #print("cache: ",cache)
@@ -385,14 +444,14 @@ class MonteCarlo(object):
                                 (1 - list_cache[-1][x[node_picked]])*\
                                 (self.r1*summ + self.r2*(1 - summ))
             if list_cache[-1][x[node_picked]] == 0 and \
-               random.uniform(0, 1) <= probability: 
+               random.uniform(0, 1) <= probability:
                 cache[x[node_picked]] = 1
                 #check to see if state of neighbor has changed before setting
                 #to original
                 if x[1-node_picked] not in cache:
                     cache[x[1-node_picked]] = list_cache[-1][x[1-node_picked]]
             elif list_cache[-1][x[node_picked]] == 1 and \
-                 random.uniform(0, 1) <= probability:                  
+                 random.uniform(0, 1) <= probability:
                 cache[x[node_picked]] = 0
                 if x[1-node_picked] not in cache:
                     cache[x[1-node_picked]] = list_cache[-1][x[1-node_picked]]
@@ -404,7 +463,7 @@ class MonteCarlo(object):
         list_cache.append(cache)
         self.__sim_data = list_cache
         return self.__sim_data
-    
+
     def simulateTL(self,timestep): #Only works for first timestep
         """Simulates the Monte Carlo simulation on the Cayley Tree for one
            time step and stores that data."""
@@ -439,7 +498,7 @@ class MonteCarlo(object):
         self.__sim_data = list_cache
         return self.__sim_data
 
-    def simulateTemp(self, k = 1, J = 1):
+    def simulateTemp(self, k = 1, J = 1): #J needs to be renamed.
         """Simulates the Monte Carlo simulation on the Cayley Tree for one
            time step and stores that data. Uses temperature of nodes in
            calculation of probabilty."""
@@ -453,15 +512,42 @@ class MonteCarlo(object):
             summ = self.neighborSum(x,list_cache[-1])
             #print("summ: ", summ)
             probability = 0.5*(1-list_cache[-1][x]*np.tanh(beta*J*summ))
+            if list_cache[-1][x] == -1 and \
+               random.uniform(0, 1) <= probability:
+                cache[x] = 1
+            elif list_cache[-1][x] == 1 and \
+                 random.uniform(0, 1) <= probability:
+                cache[x] = -1
+            else:
+                cache[x] = list_cache[-1][x]
+        #print("cache: ",cache)
+        list_cache.append(cache)
+        self.__sim_data = list_cache
+        return self.__sim_data
+
+    def simulateVote(self): ### Set up senate object with neighbors, alpha, beta, gamma, phi,
+        if len(self.__sim_data) == 0:  ### neighborSum function
+            raise ValueError("Must set up initial state of simulation")
+        list_cache = self.__sim_data
+        cache = dict()
+        beta_d = self.__network.getNodeFeature('beta')
+        phi_d = self.__network.getNodeFeature('phi')
+        for x in self.__network:
+            beta = beta_d[x]
+            phi = phi_d[x]
+            summ = self.neighborSum(x,list_cache[-1])
+            unsumm = self.neighborUnsum(x,list_cache[-1])
+            probability = self.gamma*list_cache[-1][x]*(phi**unsumm) + \
+                                    (1 - list_cache[-1][x])*\
+                                    self.alpha*(beta**(summ))
             if list_cache[-1][x] == 0 and \
                random.uniform(0, 1) <= probability:
                 cache[x] = 1
             elif list_cache[-1][x] == 1 and \
                  random.uniform(0, 1) <= probability:
-                cache[x] = 0 
+                cache[x] = 0
             else:
                 cache[x] = list_cache[-1][x]
-        #print("cache: ",cache)
         list_cache.append(cache)
         self.__sim_data = list_cache
         return self.__sim_data
@@ -474,27 +560,40 @@ class MonteCarlo(object):
     def simData(self,timestep):
         """Returns the sim data at a certain timestep."""
         return self.__sim_data[timestep]
-    
+
+    def previousState(self,node):
+        """Returns the state of the node from the previous timestep."""
+        return self.__sim_data[-1][node]
+
     def sendExcel(self,filename = "monteCarloData.xlsx"):
         """A file that sends the data ran from the most recent
            MonteCarlo().simulate to an excel sheet. Must run the simulate
            method in order to have this method work."""
-
-        #If File exists, load file. If sheet 1 is occupied, create a second
-        #sheet. Rename / use input for naming sheet.
-        
         if self.__sim_data == list():
             raise ValueError("No data to send to excel. Must run simulation")
         workbook = xlsxwriter.Workbook(filename)
         worksheet = workbook.add_worksheet("Monte Carlo Data")
         worksheet.write(0,0,"Timestep")
-        for x in range(len(self.__sim_data[0])):
-            worksheet.write(x+1,0,"Node "+ str(self.__network.keys[x]))
+        try:
+            for x in self.__network:
+                worksheet.write(x+1,0,"Node "+ str(self.__network.keys[x]))
+        except TypeError:
+            rank_d = self.__network.getNodeFeature('rank')
+            for x in self.__network:
+                worksheet.write(int(rank_d[x]),0,x)
         for y in range(len(self.__sim_data[0])):
             worksheet.write(0,y+1,str(y))
         for y in range(len(self.__sim_data)):
-            for x in range(self.__network.nodeNumber()):
-                worksheet.write(x+1,y+1,self.__sim_data[y][self.__network.keys[x]])
+            try:
+                nodes = self.__network.getNodes()
+                for x in range(len(self.__network)):
+                    worksheet.write(x+1,y+1,self.__sim_data[y]
+                                    [nodes[x]])
+            except KeyError:
+                rank_d = self.__network.getNodeFeature('rank')
+                for x in self.__network:
+                    worksheet.write(int(rank_d[x]),\
+                                    y+1,self.__sim_data[y][x])
         if self.__network.getType() == "CayleyTree":
             worksheet2 = workbook.add_worksheet("Density")
             worksheet2.write(0,0,"Timestep")
@@ -505,6 +604,10 @@ class MonteCarlo(object):
             for y in range(len(self.__sim_data)):
                 for x in range(self.__network.generations+1):
                     worksheet2.write(x+1,y+1,self.density(x,self.__sim_data[y]))
-            workbook.close()
-        else:
-            workbook.close()
+        worksheet3 = workbook.add_worksheet("Total Density")
+        worksheet3.write(0,0,'Timestep')
+        worksheet3.write(1,0,"Density")
+        for i in range(len(self.__sim_data)):
+            worksheet3.write(0,i+1,i)
+            worksheet3.write(1,i+1,self.getOnes(i)/len(self.__network))
+        workbook.close()
