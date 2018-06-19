@@ -73,9 +73,9 @@ class Senate(AbstractNetwork):
             self.completeGraph()
 
         for senator in self:
-            partisan = ideals[senator]-self.center
-            self.add(senator,beta=(1/(self.constant*(abs(partisan)+0.0001))+1),\
-                        phi = (1/(self.constant*(abs(partisan)+0.0001))+1))
-            print(senator)
-            print("phi/Beta")
-            print(1/(self.constant*(abs(partisan)+0.0001))+1)
+            eta = ideals[senator]-self.center
+            self.add(senator,beta=(1/(self.constant*(abs(eta)+0.01))+1),\
+                        phi = (1/(self.constant*(abs(eta)+0.01))+1))
+##            print(senator)
+##            print("phi/Beta")
+##            print(1/(self.constant*(abs(eta)))+1)
