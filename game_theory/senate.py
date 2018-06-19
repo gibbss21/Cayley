@@ -54,17 +54,17 @@ class Senate(AbstractNetwork):
         if self.model == 'limited':
             for item in self.getNodes():
                 margin = (ideals[item]-self.radius, ideals[item]+self.radius)
-                if item == 'Franken' or item == 'Sanders':
-                    print(item)
-                    print(margin)
+##                if item == 'Franken' or item == 'Sanders':
+##                    print(item)
+##                    print(margin)
                 neighbors = list()
                 for i in self.getNodes():
                     if margin[0] <= ideals[i] <= margin[1] and i != item:
                         neighbors.append(i)
                 self.multipleLinkCreator(item, neighbors)
-                if item == 'Franken' or item == 'Sanders':
-                    print(item)
-                    print(neighbors)
+##                if item == 'Franken' or item == 'Sanders':
+##                    print(item)
+##                    print(neighbors)
             neigh_d = self.getNodeFeature('neighbors')
             for item in self.getNodes():
                 if len(neigh_d[item]) == 0:
@@ -73,9 +73,27 @@ class Senate(AbstractNetwork):
             self.completeGraph()
 
         for senator in self:
+<<<<<<< HEAD
+<<<<<<< HEAD
+            eta = ideals[senator]-self.center
+            self.add(senator,beta=(1/(self.constant*(abs(eta)))+1),\
+                        phi = (1/(self.constant*abs(eta))+1))
+##            print(senator)
+##            print("phi/Beta")
+##            print(1/(self.constant*(abs(partisan)))+1)
+=======
+            partisan = ideals[senator]-self.center
+            self.add(senator,beta=(1/(self.constant*(abs(partisan)+0.0001))+1),\
+                        phi = (1/(self.constant*(abs(partisan)+0.0001))+1))
+            print(senator)
+            print("phi/Beta")
+            print(1/(self.constant*(abs(partisan)+0.0001))+1)
+>>>>>>> a200eb192d145f5a3baddd829288aea0508b99de
+=======
             eta = ideals[senator]-self.center
             self.add(senator,beta=(1/(self.constant*(abs(eta)+0.01))+1),\
                         phi = (1/(self.constant*(abs(eta)+0.01))+1))
 ##            print(senator)
 ##            print("phi/Beta")
 ##            print(1/(self.constant*(abs(eta)))+1)
+>>>>>>> 3d09111f9b0c42dc2bee612fb0760b3772f753ce
