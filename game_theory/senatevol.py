@@ -13,7 +13,18 @@ import csv
 def simulate(model, const, a_const, radius, issue, trials):
     network = cg.Senate(model, const, radius)
     polarity = issue-0.5
-    senate = cy.MonteCarlo(network, 1/(a_const*abs(polarity)), 0, 1/(a_const*abs(polarity)))
+    ideals = network.getNodeFeature('ideology')
+    for senator in network:
+        eta = ideals[senator] - 0.57
+        Alpha = 1/(a_const*abs(polarity)) + (polarity*eta)/10
+        Gamma = 1/(a_const*abs(polarity)) - (polarity*eta)/10
+        network.add(senator, alpha = Alpha, gamma = Gamma)
+        print(senator)
+        print(Alpha)
+        print(Gamma)
+##    alpha = 1/(a_const*abs(polarity))
+##    gamma = 1/(a_const*abs(polarity))
+    senate = cy.MonteCarlo(network, 0, 0, 0)
     run_time = time.time()
     endcol = xl.utility.xl_col_to_name(timesteps+1)
 
@@ -47,11 +58,11 @@ def simulate(model, const, a_const, radius, issue, trials):
     for i in range(trials):
         senate.clear()
         senate.senateDictionary(issue)
-        print("Trial: " + str(i))
+##        print("Trial: " + str(i))
 
         for t in range(timesteps):
-            print("\n")
-            print("Timestep: " + str(t))
+##            print("\n")
+##            print("Timestep: " + str(t))
             senate.simulateVote()
 
         state_collect[i] = senate.simData(senate.getTimesteps()-1)
