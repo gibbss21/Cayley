@@ -16,28 +16,32 @@ class AbstractNetwork(object):
 
     def __init__(self):
         """Sets up the link dictionary and the mod count."""
+        self.nodes = list()
         self.graph = dict()
         self._modCount = 0
-        
+
     def __iter__(self):
         """Allows iteration over self."""
-        #self._nodes = [x[0] for x in self.graph.items()]
         temp = self._modCount
         cursor = 0
-        while cursor < len(self):
-            yield self.keys[cursor]
+        while cursor < len(self.nodes):
+            yield self.nodes[cursor]
             if temp != self._modCount:
-                raise AttributeError("Illegal modification of the backing store.")   
+                raise AttributeError("Illegal modification of the backing store.")
             cursor += 1
 
     def __len__(self):
         """Returns the number of nodes in the network."""
-        return self.nodeNumber()
+        return len(self.nodes)
 
     def __str__(self):
         return str(self.graph)
 
-    def __degree(self,node):
+    def getNodes(self):
+        """Returns the list of nodes in the network."""
+        return self.nodes
+
+    def degree(self,node):
         """Returns the degree of a node."""
         return len(self.graph[node]["neighbors"])
 
@@ -49,6 +53,7 @@ class AbstractNetwork(object):
             self.keys.append(node)
             self.graph[node] = kwargs
             self.graph[node]["neighbors"] = set()
+            self.nodes.append(node)
         else: #if node is already in graph, handles updating features.
             for key in kwargs.items():
                 try:
@@ -72,12 +77,13 @@ class AbstractNetwork(object):
             for node,datum in zip(self,data.items()):
                 self.add(node,state = datum[1])
         except AttributeError:
-            
+
             for node in self:
                 a = name
                 self.add(node,a = data)
 
     def getNodeFeature(self,name):
+        """Returns a dictionary with nodes with feature in question."""
         return {n: self.graph[n][name] for n in self if name in self.graph[n]}
 
     def remove(self,node):
@@ -86,7 +92,7 @@ class AbstractNetwork(object):
         del copy[node]
         self.graph = copy
         return self.graph
-            
+
     def linkCreator(self,node,connection):
         """Adds a link in between two nodes."""
         try:
@@ -102,7 +108,7 @@ class AbstractNetwork(object):
                 (self.graph[connection]["neighbors"]).add(node)
         except TypeError:
             return "Connections object is not iterable"
-        
+
     def clear(self):
         """Clears the network of all links, nodes, and data."""
         self.graph = dict()
@@ -119,7 +125,7 @@ class AbstractNetwork(object):
         for node in self:
             for connection in self.graph[node]["neighbors"]:
                 edge_list[node,connection] = 1
-                edge_list[connection,node] = 1    
+                edge_list[connection,node] = 1
         return edge_list
 
     def linksAsTuples(self):
@@ -134,3 +140,11 @@ class AbstractNetwork(object):
                                             self.graph[x]["neighbors"]))))
             tuples = tuples + edges
         return tuples
+
+    def completeGraph(self):
+        """Takes any network and makes it a complete graph."""
+        nodes = self.getNodes()
+        for item in nodes:
+            copy = nodes[:]
+            copy.remove(item)
+            self.multipleLinkCreator(item,copy)

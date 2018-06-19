@@ -5,7 +5,7 @@ Project: Research for Irina Mazilu, Ph.D.
 
 This file contains the Lattice class. This class creates a Cayley Tree
 object, by setting up the nodes and links between nodes. It also has methods
-which allow for some basic analysis of the class such as number of nodes and
+which allow for some basic analysis of the object such as number of nodes and
 nodes per floor. 	
 """
 
@@ -20,14 +20,15 @@ class Lattice(AbstractNetwork):
     length, width, and height based on the number of nodes. It defaults to a
     2-demensional lattice."""
 
-    def __init__(self,length,width,height = 1):
+    def __init__(self,length,width,height = 1,names = None):
         """Sets up the demenstions of the lattice."""
+        AbstractNetwork.__init__(self)
         self.x = length
         self.y = width
         self.z = height-1
+        self.__names = names
         self.latticeProtect()
         self.keys = list(range(self.nodeNumber()))
-        AbstractNetwork.__init__(self)
         self.autoCreate()
         
     def __eq__(self,other):
@@ -64,30 +65,39 @@ class Lattice(AbstractNetwork):
         return self.x*self.y
 
     def autoCreate(self):
-        """Creates the links present in a lattice. Has a dictionary with the
-        node number as the key and a list of neighbors as the value."""
-        for x in range(len(self)):
-            self.add(x)
+        """Creates the links present in a lattice. If the object was created
+        with a given set of names that go in the order that the lattice is
+        numberd, then the nodes will be properly linked as intended.
+
+        If no names are given, it just uses a number as a name."""
+        try:
+            for x in self.__names:
+                self.add(x)
+        except TypeError:
+            for x in range(self.nodeNumber()):
+                self.add(x)
         row_count = 0
         floor_count = 0
+        node_count = 0
         for node in self:
-            column_count = node % self.x
+            column_count = node_count % self.x
             if column_count % self.x != self.x -1: #checks if at x-max
-                self.linkCreator(node,node+1)
+                self.linkCreator(node,self.nodes[node_count+1])
             if column_count % self.x != 0: #checks if at x-min
-               self.linkCreator(node,node-1)
+               self.linkCreator(node,self.nodes[node_count-1])
                
             if row_count % self.y != self.y-1: #checks if at y-max
-                self.linkCreator(node,node+self.x)
+                self.linkCreator(node,self.nodes[node_count+self.x])
             if row_count % self.y != 0: #checks if at y-min
-                self.linkCreator(node,node-self.x)
-            if node % self.x == self.x - 1:
+                self.linkCreator(node,self.nodes[node_count-self.x])
+            if node_count % self.x == self.x - 1:
                 row_count += 1
     
             if floor_count != self.z: #checks if at z-max
-                self.linkCreator(node,node+self.floorArea())
+                self.linkCreator(node,self.nodes[node_count+self.floorArea()])
             if floor_count != 0: #checks if at z-min
-                self.linkCreator(node,node-self.floorArea())
-            if node % self.floorArea() == self.floorArea() - 1:
+                self.linkCreator(node,self.nodes[node_count-self.floorArea()])
+            if node_count % self.floorArea() == self.floorArea() - 1:
                 floor_count += 1
+            node_count += 1
  
