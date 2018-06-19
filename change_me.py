@@ -11,7 +11,7 @@ initial_state = "empty"
 total_nodes = [[1,None,None,None,None], #total_nodes[gens][links]
                [None,2,3,4,5,6],
                [None,None,5,10,17,26],
-               [None,None,7,22,53,106],
+               [None,None,7,22,53,106,187],
                [None,None,9,46,161,426],
                [None,None,11,94,485,1706]]
 
@@ -31,4 +31,6 @@ temp_d = {0: 0.3,
           6: 0.3
           }
 
-senate_corr = [['Franken','Sanders'],['Sanders','Merkley']]
+senate_corr = [['Franken','Sanders'],['Sanders','Merkley'],
+               ['Brown','Murphy'],['Alexander','Corker'],
+               ['Scott','Wicker'],['Roberts','Inhofe']]

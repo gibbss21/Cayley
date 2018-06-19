@@ -194,20 +194,20 @@ class MonteCarlo(object):
             raise ValueError("Must clear data before setting initial state.")
 
     def senateDictionary(self, issue):
-        if len(self.__sim_data) == 0:
+        if len(self.__sim_data) == 0 or True:
             polarity = issue - 0.5
             ideals = self.__network.getNodeFeature('ideology')
             for node in self.__network:
-                eta = ideals[node] - self.getMedian()
-                probability = (eta*polarity + 0.34)/(0.68) ### CHANGE ###
+                eta = ideals[node] - 0.57 #self.getMedian()
+                probability = (eta*polarity/0.23 + 0.5) ### CHANGE ###
                 if random.uniform(0, 1) <= probability:
                     vote = 1
                 else:
                     vote = 0
                 self.__network.add(node, state = vote)
             self.__sim_data.append(self.__network.getNodeFeature('state'))
-        else:
-            raise ValueError("Must clear data before setting initial state.")
+##        else:
+##            raise ValueError("Must clear data before setting initial state.")
 
     def magnetization(self,nodes):
         """Adds magnetization to a certain group of nodes."""
@@ -532,21 +532,38 @@ class MonteCarlo(object):
         cache = dict()
         beta_d = self.__network.getNodeFeature('beta')
         phi_d = self.__network.getNodeFeature('phi')
+        alpha_d = self.__network.getNodeFeature('alpha')
+        gamma_d = self.__network.getNodeFeature('gamma')
+        neigh_d = self.__network.getNodeFeature('neighbors')
         for x in self.__network:
             beta = beta_d[x]
             phi = phi_d[x]
+            alpha = alpha_d[x]
+            gamma = gamma_d[x]
             summ = self.neighborSum(x,list_cache[-1])
             unsumm = self.neighborUnsum(x,list_cache[-1])
-            probability = self.gamma*list_cache[-1][x]*(phi**unsumm) + \
+            probability = gamma*list_cache[-1][x]*(phi**(unsumm/len(neigh_d[x]))) + \
                                     (1 - list_cache[-1][x])*\
-                                    self.alpha*(beta**(summ))
+                                    alpha*(beta**(summ/len(neigh_d[x])))
+##            if x == 'Sanders' and list_cache[-1][x] == 1:
+##                print("State: " + str(list_cache[-1][x]))
+##                print("Summ: " + str(summ))
+##                print("Unsumm: " + str(unsumm))
+##                print("Probability: " + str(probability))
             if list_cache[-1][x] == 0 and \
                random.uniform(0, 1) <= probability:
+##                if x == 'Sanders':
+##                    print("Probability: " + str(probability))
+##                    print("change")
                 cache[x] = 1
             elif list_cache[-1][x] == 1 and \
                  random.uniform(0, 1) <= probability:
+##                if x == 'Sanders' and list_cache[-1][x] == 1:
+##                    print("change")
                 cache[x] = 0
             else:
+##                if x == 'Sanders' and list_cache[-1][x] == 1:
+##                    print("no change")
                 cache[x] = list_cache[-1][x]
         list_cache.append(cache)
         self.__sim_data = list_cache

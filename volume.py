@@ -147,8 +147,14 @@ def simulate(method, generations, links, alpha, beta, gamma, mu, r1, r2, trials,
             except NameError: pass
 
     corr_t = dict()
+    prod_t = dict()
+    n1_t = dict()
+    n2_t = dict()
     for n in range(len(node_list)):
         corr_t[n] = [0]*(timesteps+1)
+        prod_t[n] = [0]*(timesteps+1)
+        n1_t[n] = [0]*(timesteps+1)
+        n2_t[n] = [0]*(timesteps+1)
         for t in range(timesteps+1):
             sum_prod = 0
             n1 = 0
@@ -158,6 +164,9 @@ def simulate(method, generations, links, alpha, beta, gamma, mu, r1, r2, trials,
                 n1 += node_d[i][n][0][t]
                 n2 += node_d[i][n][1][t]
             corr_t[n][t] = (sum_prod/trials)-(n1/trials)*(n2/trials)
+            prod_t[n][t] = (sum_prod/trials)
+            n1_t[n][t] = (n1/trials)
+            n2_t[n][t] = (n2/trials)
 
     for n in range(len(node_list)): # For recording correlations
         sheetname = ("Nodes_%d+%d" %(node_list[n][0],node_list[n][1]))
@@ -166,6 +175,9 @@ def simulate(method, generations, links, alpha, beta, gamma, mu, r1, r2, trials,
         corr_sheet = workbook.add_worksheet(sheetname)
         corr_sheet.write(0,0,"Timestep")
         corr_sheet.write(1,0,"Correlation")
+        corr_sheet.write(5,0,"Product Average")
+        corr_sheet.write(6,0,"%d Average" %(node_list[n][0]))
+        corr_sheet.write(7,0,"%d Average" %(node_list[n][1]))
         corr_chart = workbook.add_chart({'type':'line'})
         corr_sheet.insert_chart('I8', corr_chart)
         corr_chart.set_title({'name':'Correlation'})
@@ -176,6 +188,9 @@ def simulate(method, generations, links, alpha, beta, gamma, mu, r1, r2, trials,
         for t in range(timesteps+1):
             corr_sheet.write(0,t+1,t)
             corr_sheet.write(1,t+1,corr_t[n][t])
+            corr_sheet.write(5,t+1,prod_t[n][t])
+            corr_sheet.write(6,t+1,n1_t[n][t])
+            corr_sheet.write(7,t+1,n2_t[n][t])
 
 
     ### FOR RECORDING OVERALL DATA ###

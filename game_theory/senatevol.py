@@ -7,13 +7,24 @@ import xlsxwriter as xl
 import time
 from math import sqrt
 from Cayley.change_me import timesteps
-from change_me import senate_corr
+from Cayley.change_me import senate_corr
 import csv
 
 def simulate(model, const, a_const, radius, issue, trials):
     network = cg.Senate(model, const, radius)
     polarity = issue-0.5
-    senate = cy.MonteCarlo(network, 1/(a_const*abs(polarity)), 0, 1/(a_const*abs(polarity)))
+    ideals = network.getNodeFeature('ideology')
+    for senator in network:
+        eta = ideals[senator] - 0.57
+        Alpha = 1/(a_const*abs(polarity)) + (polarity*eta)/10
+        Gamma = 1/(a_const*abs(polarity)) - (polarity*eta)/10
+        network.add(senator, alpha = Alpha, gamma = Gamma)
+        print(senator)
+        print(Alpha)
+        print(Gamma)
+##    alpha = 1/(a_const*abs(polarity))
+##    gamma = 1/(a_const*abs(polarity))
+    senate = cy.MonteCarlo(network, 0, 0, 0)
     run_time = time.time()
     endcol = xl.utility.xl_col_to_name(timesteps+1)
 
@@ -22,8 +33,8 @@ def simulate(model, const, a_const, radius, issue, trials):
     ag_tag = "%.1d" %a_const
     rad_tag = "%.3f" %radius
     IV_tag = "%.2f" %issue
-    print(issue)
-    print(IV_tag)
+##    print(issue)
+##    print(IV_tag)
     if model == 'linear':
         name = ("LIN%sbp_%sag_%sIV" % (bp_tag, ag_tag, IV_tag))
     elif model == 'limited':
@@ -47,8 +58,11 @@ def simulate(model, const, a_const, radius, issue, trials):
     for i in range(trials):
         senate.clear()
         senate.senateDictionary(issue)
+##        print("Trial: " + str(i))
 
         for t in range(timesteps):
+##            print("\n")
+##            print("Timestep: " + str(t))
             senate.simulateVote()
 
         state_collect[i] = senate.simData(senate.getTimesteps()-1)
@@ -76,12 +90,12 @@ def simulate(model, const, a_const, radius, issue, trials):
         if trials <= 10: # Trial-by-trial is best for small sets
             worksheet = workbook.add_worksheet("Data trial %d" % (i+1))
             worksheet.write(0,0,"Timestep")
-            for x in network:
-                worksheet.write(x+1,0,"Node "+str(network.keys[x]))
-            for y in range(self.getTimesteps()):
-                worksheet.write(0,y+1,str(y))
             rank_d = network.getNodeFeature('rank')
-            for y in range(self.getTimesteps()):
+            for x in network:
+                worksheet.write(int(rank_d[x]),0,x)
+            for y in range(senate.getTimesteps()):
+                worksheet.write(0,y+1,str(y))
+            for y in range(senate.getTimesteps()):
                 for x in network:
                     worksheet.write(int(rank_d[x]),y+1,senate.simData(y)[x])
 
@@ -97,8 +111,14 @@ def simulate(model, const, a_const, radius, issue, trials):
         print(str(time.time()-run_time)+" secs")
 
     corr_t = dict()
+    prod_t = dict()
+    n1_t = dict()
+    n2_t = dict()
     for n in range(len(senate_corr)):
         corr_t[n] = [0]*(timesteps+1)
+        prod_t[n] = [0]*(timesteps+1)
+        n1_t[n] = [0]*(timesteps+1)
+        n2_t[n] = [0]*(timesteps+1)
         for t in range(timesteps+1):
             sum_prod = 0
             n1 = 0
@@ -108,6 +128,9 @@ def simulate(model, const, a_const, radius, issue, trials):
                 n1 += node_d[i][n][senate_corr[n][0]][t]
                 n2 += node_d[i][n][senate_corr[n][1]][t]
             corr_t[n][t] = (sum_prod/trials)-(n1/trials)*(n2/trials)
+            prod_t[n][t] = (sum_prod/trials)
+            n1_t[n][t] = (n1/trials)
+            n2_t[n][t] = (n2/trials)
 
     for n in range(len(senate_corr)): # For recording correlations
         sheetname = ("%s+%s" %(senate_corr[n][0],senate_corr[n][1]))
@@ -116,6 +139,9 @@ def simulate(model, const, a_const, radius, issue, trials):
         corr_sheet = workbook.add_worksheet(sheetname)
         corr_sheet.write(0,0,"Timestep")
         corr_sheet.write(1,0,"Correlation")
+        corr_sheet.write(5,0,"Product Average")
+        corr_sheet.write(6,0,"%s Average" %(senate_corr[n][0]))
+        corr_sheet.write(7,0,"%s Average" %(senate_corr[n][1]))
         corr_chart = workbook.add_chart({'type':'line'})
         corr_sheet.insert_chart('I8', corr_chart)
         corr_chart.set_title({'name':'Correlation'})
@@ -126,6 +152,9 @@ def simulate(model, const, a_const, radius, issue, trials):
         for t in range(timesteps+1):
             corr_sheet.write(0,t+1,t)
             corr_sheet.write(1,t+1,corr_t[n][t])
+            corr_sheet.write(5,t+1,prod_t[n][t])
+            corr_sheet.write(6,t+1,n1_t[n][t])
+            corr_sheet.write(7,t+1,n2_t[n][t])
 
     # Average density over time
     overtime.write(0,0,"Timestep")
