@@ -78,4 +78,4 @@ class Senate(AbstractNetwork):
                         phi = (1/(self.constant*(abs(partisan)+0.0001))+1))
             print(senator)
             print("phi/Beta")
-            print(1/(self.constant*(abs(partisan)))+1)
+            print(1/(self.constant*(abs(partisan)+0.0001))+1)
